@@ -1,67 +1,65 @@
-// src/components/Blogs.jsx
-import React, { useState, useEffect } from 'react';
-import staticBlogs from '../data/blogs.json';
-import { FaPlus } from 'react-icons/fa'; // Import a plus icon from React Icons
+import React, { useState, useEffect } from "react";
+import staticBlogs from "../data/blogs.json";
+import { FaPlus, FaTrash } from "react-icons/fa";
+import { Link } from "react-router-dom";
 
 const Blogs = () => {
   const [blogs, setBlogs] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [imageData, setImageData] = useState(null); // Stores the base64 string of the image
-  const [imagePreview, setImagePreview] = useState(null); // For previewing the image
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [imageData, setImageData] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
 
-  // Load blogs: combine static blogs and dynamic blogs from localStorage
   useEffect(() => {
-    const savedBlogs = JSON.parse(localStorage.getItem('dynamicBlogs')) || [];
+    const savedBlogs = JSON.parse(localStorage.getItem("dynamicBlogs")) || [];
     setBlogs([...staticBlogs, ...savedBlogs]);
   }, []);
 
-  // Handle image upload and preview
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Create a preview URL
       const previewURL = URL.createObjectURL(file);
       setImagePreview(previewURL);
-
-      // Optionally, convert the file to a base64 string for storage (not recommended for large images)
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setImageData(reader.result);
-      };
+      reader.onloadend = () => setImageData(reader.result);
       reader.readAsDataURL(file);
     }
   };
 
-  // Function to add a new blog
   const handleAddBlog = (e) => {
     e.preventDefault();
-    if (title.trim() === '' || content.trim() === '') return;
+    if (title.trim() === "" || content.trim() === "") return;
 
     const newBlog = {
       id: Date.now(),
       title,
       content,
-      image: imageData, // Attach the image data (can be null)
+      image: imageData,
       author: "You",
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString().split("T")[0],
     };
 
-    // Update dynamic blogs in localStorage
-    const savedDynamicBlogs = JSON.parse(localStorage.getItem('dynamicBlogs')) || [];
-    const updatedDynamicBlogs = [...savedDynamicBlogs, newBlog];
-    localStorage.setItem('dynamicBlogs', JSON.stringify(updatedDynamicBlogs));
+    const savedBlogs = JSON.parse(localStorage.getItem("dynamicBlogs")) || [];
+    const updatedBlogs = [...savedBlogs, newBlog];
+    localStorage.setItem("dynamicBlogs", JSON.stringify(updatedBlogs));
 
-    // Update blogs state to include static + dynamic blogs
-    setBlogs([...staticBlogs, ...updatedDynamicBlogs]);
+    setBlogs([...staticBlogs, ...updatedBlogs]);
 
-    // Clear the form inputs and close modal
-    setTitle('');
-    setContent('');
+    setTitle("");
+    setContent("");
     setImageData(null);
     setImagePreview(null);
     setShowAddModal(false);
+  };
+
+  const handleDeleteBlog = (id) => {
+    const updatedBlogs = blogs.filter((blog) => blog.id !== id);
+    setBlogs(updatedBlogs);
+
+    const savedBlogs = JSON.parse(localStorage.getItem("dynamicBlogs")) || [];
+    const newSavedBlogs = savedBlogs.filter((blog) => blog.id !== id);
+    localStorage.setItem("dynamicBlogs", JSON.stringify(newSavedBlogs));
   };
 
   return (
@@ -69,12 +67,10 @@ const Blogs = () => {
       <div className="container mx-auto px-4">
         <h2 className="text-3xl font-bold mb-6 text-center">Explore Our Blogs</h2>
 
-        {/* Blog List */}
         <div className="grid md:grid-cols-2 gap-6">
           {blogs.map((blog) => (
-            <div key={blog.id} className="bg-white p-6 rounded-lg shadow-md">
+            <div key={blog.id} className="bg-white p-6 rounded-lg shadow-md relative">
               <h3 className="text-xl font-semibold mb-2">{blog.title}</h3>
-              {/* Render image if available */}
               {blog.image && (
                 <img
                   src={blog.image}
@@ -82,16 +78,26 @@ const Blogs = () => {
                   className="mb-4 w-full h-48 object-cover rounded"
                 />
               )}
-              <p className="text-gray-700 mb-4">{blog.content}</p>
+              <p className="text-gray-700 mb-4">{blog.content.substring(0, 100)}...</p>
               <p className="text-gray-500 text-sm">
                 By {blog.author} on {blog.date}
               </p>
+              <div className="flex justify-between items-center mt-4">
+                <Link to={`/blogs/${blog.id}`} className="text-blue-500">
+                  Read More
+                </Link>
+                <button
+                  onClick={() => handleDeleteBlog(blog.id)}
+                  className="text-red-500 hover:text-red-700"
+                >
+                  <FaTrash size={16} />
+                </button>
+              </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Floating Action Button to Open Modal */}
       <button
         onClick={() => setShowAddModal(true)}
         className="fixed bottom-8 right-8 bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-full shadow-lg"
@@ -99,7 +105,6 @@ const Blogs = () => {
         <FaPlus size={20} />
       </button>
 
-      {/* Modal for Adding New Blog */}
       {showAddModal && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
           <div className="bg-white p-6 rounded-lg w-full max-w-md mx-4">
@@ -126,7 +131,6 @@ const Blogs = () => {
                 onChange={handleImageChange}
                 className="w-full mb-4"
               />
-              {/* Display image preview if available */}
               {imagePreview && (
                 <img
                   src={imagePreview}
@@ -139,9 +143,8 @@ const Blogs = () => {
                   type="button"
                   onClick={() => {
                     setShowAddModal(false);
-                    // Optionally clear form inputs
-                    setTitle('');
-                    setContent('');
+                    setTitle("");
+                    setContent("");
                     setImageData(null);
                     setImagePreview(null);
                   }}
